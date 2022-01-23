@@ -1,3 +1,3 @@
-# Gaze estimation using a webcam 
+# Eye Gaze estimation using a webcam 
 
 ![](./gaze.gif)
