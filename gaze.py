@@ -46,7 +46,7 @@ def gaze(frame, points):
     3D model eye points
     The center of the eye ball
     '''
-    Eye_ball_center_right = (-29.05, 32.7, -39.5)
+    Eye_ball_center_right = np.array([[-29.05], [32.7], [-39.5]])
     Eye_ball_center_left = np.array([[29.05], [32.7], [-39.5]])  # the center of the left eyeball as a vector.
 
     '''
@@ -64,12 +64,15 @@ def gaze(frame, points):
     (success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix,
                                                                   dist_coeffs, flags=cv2.cv2.SOLVEPNP_ITERATIVE)
 
+    # 2d pupil location
     left_pupil = relative(points.landmark[468], frame.shape)
-    try:
-        # Transformation between image point to world point
-        _, transformation, _ = cv2.estimateAffine3D(image_points1, model_points)  # image to world transformation
-
-        # project pupil image point into world point 
+    right_pupil = relative(points.landmark[473], frame.shape)
+    
+    # Transformation between image point to world point
+    _, transformation, _ = cv2.estimateAffine3D(image_points1, model_points)  # image to world transformation
+    
+    if transformation is not None: # if estimateAffine3D secsseded
+        # project pupil image point into 3d world point 
         pupil_world_cord = transformation @ np.array([[left_pupil[0], left_pupil[1], 0, 1]]).T
         
         # 3D gaze point (10 is arbitrary value denoting gaze distance)
@@ -81,16 +84,11 @@ def gaze(frame, points):
         # project 3D head pose into the image plane
         (head_pose, _) = cv2.projectPoints((int(pupil_world_cord[0]), int(pupil_world_cord[1]), int(40)), rotation_vector,
                                                         translation_vector, camera_matrix, dist_coeffs)
-         
         # correct gaze for head rotation
         gaze = left_pupil + (eye_pupil2D[0][0] - left_pupil) - (head_pose[0][0] - left_pupil)
 
         # Draw gaze line into screen
         p1 = (int(left_pupil[0]), int(left_pupil[1]))
-        p2 = (int(eye_pupil2D[0][0][0]), int(eye_pupil2D[0][0][1]))
-        p3 = (int(left_pupil[0]), int(left_pupil[1]))
-        p4 = (int(gaze[0]), int(gaze[1]))
+        p2 = (int(gaze[0]), int(gaze[1]))
         cv2.line(frame, p1, p2, (0, 0, 255), 2)
-        cv2.line(frame, p3, p4, (0, 0, 0), 2)
-    except:
-        pass
+
