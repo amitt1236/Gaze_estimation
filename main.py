@@ -1,13 +1,8 @@
 import mediapipe as mp
 import cv2
 import gaze
-import expresion
-import time
-import numpy as np
-from helpers import relative
+
 mp_face_mesh = mp.solutions.face_mesh  # initialize the face mesh model
-exp = expresion.expression()
-points_arr = np.zeros((478,2))
 
 # camera stream:
 cap = cv2.VideoCapture(1)  # chose camera index (try 1, 2, 3)
@@ -27,17 +22,9 @@ with mp_face_mesh.FaceMesh(
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # frame to RGB for the face-mesh model
         results = face_mesh.process(image)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # frame back to BGR for OpenCV
-        shape = np.array([[image.shape[1], 0],[0, image.shape[0]]])
 
         if results.multi_face_landmarks:
-            for i in range(478):
-                points_arr[i][0] = results.multi_face_landmarks[0].landmark[i].x
-                points_arr[i][1] = results.multi_face_landmarks[0].landmark[i].y
-            points_relative = points_arr @ shape
-
-
-
-            cv2.imshow('output', exp.centered_frame(image, results.multi_face_landmarks[0]))
+            gaze.gaze(image, results.multi_face_landmarks[0])  # gaze estimation
 
         cv2.imshow('output window', image)
         if cv2.waitKey(2) & 0xFF == 27:
